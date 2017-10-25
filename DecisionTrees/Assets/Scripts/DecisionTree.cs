@@ -41,6 +41,7 @@ public class DecisionTree : MonoBehaviour {
         {
             n_labels.Add(actual);
         }
+        n_labels.Add("MarcadorLinea");
 
         List<List<string>> n_values = new List<List<string>>();
         for(int i=0;i<values.Count;i++)
@@ -81,7 +82,7 @@ public class DecisionTree : MonoBehaviour {
             {
                 GameObject node = Instantiate(nodeToDraw, canvas.transform);
                 node.transform.GetChild(0).GetComponent<Text>().text = decisionTree[i][j][0];
-                node.transform.position = new Vector3( width/2 + j * 200, height - 75 - 75 * i);
+                node.transform.position = new Vector3( width/2 + j * 100, height - 25 - 150 * i);
                 nodes[i].Add(node);
             }
         }
@@ -125,27 +126,27 @@ public class DecisionTree : MonoBehaviour {
 
         foreach(List<string> value in l_values)
         {
-            if(value[value.Count-1] == "True")
+            if(value[value.Count-2] == "True")
             {
                 count1 += 1.0f;
             }
             else
             {
-                count2 += 2.0f;
+                count2 += 1.0f;
             }
         }
 
         float firstEntropy = Entropy(count1, count2);
         List<float> entropies = new List<float>();
 
-        foreach (string label in l_labels)
+        for(int i=0;i<l_labels.Count-2;i++)
         {
-            entropies.Add(Entropy(n_MineValuesForLabel(label,l_values)));
+            entropies.Add(Entropy(n_MineValuesForLabel(l_labels[i],l_values)));
         }
 
         float max = float.NegativeInfinity;
         string labelMax = "INFINITY";
-        for (int i = 0; i < entropies.Count - 1; i++) //The last one I don't check it because is the final result
+        for (int i = 0; i < entropies.Count; i++) //The last one I don't check it because is the final result
         {
             if (firstEntropy - entropies[i] > max)
             {
@@ -206,116 +207,6 @@ public class DecisionTree : MonoBehaviour {
     }
 
 
-
-    private void CreateTree(List<string> l_labels, List<List<string>> l_values, int indexToInsert, List<List<string>> tree)
-    {
-        float count1 = 0.0f;
-        float count2 = 0.0f;
-
-        for(int i=0;i<l_values.Count;i++)
-        {
-            if(l_values[i][l_values[i].Count-1] == "True")
-            {
-                count1 += 1.0f;
-            }
-            else if (l_values[i][l_values[i].Count - 1] == "False")
-            {
-                count2 += 1.0f;
-            }
-        }
-
-        float firstEntropy = Entropy(count1, count2); //Hacer funcion que cuente los true y false de la ultim -->Definitivamente 
-        List<float> entropies = new List<float>();
-
-        foreach(string label in l_labels)
-        {
-            entropies.Add(  Entropy(    MineValuesForLabel(label)           ));
-        }
-
-        float max = float.NegativeInfinity;
-        string labelMax = "INFINITY";
-        for(int i=0;i<entropies.Count-1;i++) //The last one I don't check it because is the final result
-        {
-            if(firstEntropy-entropies[i] > max)
-            {
-                max = entropies[i];
-                labelMax = l_labels[i]; //FALLA POTENCIALMENTE PERO NO LO SE AUN 
-            }
-        }
-
-        if(labelMax != "INFINITY")
-        {
-
-            List<KeyValuePair<string, float[]>> valoresSelected = MineValuesForLabel(labelMax);
-
-            tree[indexToInsert].Add(labelMax);
-
-            List<string> n_labels = new List<string>();
-            for(int i=0;i<l_labels.Count;i++)
-            {
-                if (i != l_labels.IndexOf(labelMax))
-                    n_labels.Add(l_labels[i]);
-            }
-
-            List<List<string>> n_values = new List<List<string>>();
-            for (int i = 0; i < l_values.Count; i++)
-            {
-                if(i != l_labels.IndexOf(labelMax))
-                {
-                    n_values.Add(new List<string>());
-                    for (int j = 0; j < l_values[i].Count; j++)
-                    {
-                        n_values[n_values.Count-1].Add(l_values[i][j]);
-                    }
-                }
-            }
-
-            foreach(KeyValuePair<string, float[]> pareja in valoresSelected)
-            {
-
-                if (pareja.Value[0] != 0.0f && pareja.Value[1] != 0.0f)
-                {
-                    CreateTree(n_labels, n_values, indexToInsert + 1, tree);
-                }
-            }
-
-        }
-    }
-
-    private List<KeyValuePair<string,float[]>> MineValuesForLabel(string label)
-    {
-        List<string> groups = new List<string>();
-
-        List<KeyValuePair<string, float[]>> to_return = new List<KeyValuePair<string, float[]>>();
-
-
-        for(int i=0;i< values[labels.IndexOf(label)].Count;i++)
-        {
-            string element = values[labels.IndexOf(label)][i];
-
-            if(!groups.Contains(element))
-            {
-                groups.Add(element);
-                if(values[values.Count-1][i] == "True")
-                    to_return.Add(new KeyValuePair<string, float[]>(element, new float[] { 1.0f, 0.0f }));
-                else
-                    to_return.Add(new KeyValuePair<string, float[]>(element, new float[] { 0.0f, 1.0f }));
-            }
-            else
-            {
-                string old_key = to_return[groups.IndexOf(element)].Key;
-                float[] old_values = to_return[groups.IndexOf(element)].Value;
-
-                if (values[values.Count - 1][i] == "True")
-                    to_return[groups.IndexOf(element)] = new KeyValuePair<string, float[]>(old_key, new float[] { old_values[0]+1.0f, old_values[1] });
-                else
-                    to_return[groups.IndexOf(element)] = new KeyValuePair<string, float[]>(old_key, new float[] { old_values[0], old_values[1]+1.0f });
-            }
-        }
-
-        return to_return;
-    }
-
     private List<KeyValuePair<string, float[]>> n_MineValuesForLabel(string label, List<List<string>> l_values)
     {
         List<string> groups = new List<string>();
@@ -331,7 +222,7 @@ public class DecisionTree : MonoBehaviour {
             if (!groups.Contains(element))
             {
                 groups.Add(element);
-                if (value[value.Count - 1] == "True")
+                if (value[value.Count - 2] == "True")
                     to_return.Add(new KeyValuePair<string, float[]>(element, new float[] { 1.0f, 0.0f }));
                 else
                     to_return.Add(new KeyValuePair<string, float[]>(element, new float[] { 0.0f, 1.0f }));
@@ -341,7 +232,7 @@ public class DecisionTree : MonoBehaviour {
                 string old_key = to_return[groups.IndexOf(element)].Key;
                 float[] old_values = to_return[groups.IndexOf(element)].Value;
 
-                if (value[value.Count-1] == "True")
+                if (value[value.Count-2] == "True")
                     to_return[groups.IndexOf(element)] = new KeyValuePair<string, float[]>(old_key, new float[] { old_values[0] + 1.0f, old_values[1] });
                 else
                     to_return[groups.IndexOf(element)] = new KeyValuePair<string, float[]>(old_key, new float[] { old_values[0], old_values[1] + 1.0f });
@@ -351,69 +242,13 @@ public class DecisionTree : MonoBehaviour {
         return to_return;
     }
 
-
-    private void ProcessSourceText(string text)
-    {
-        string aux = "";
-        bool inFirstLine = true;
-        int inserIndex = 0;
-
-        foreach (char c in text)
-        {
-            if(c != ':' && c != '\n' && c != '?' && c != '\r')
-            {
-                aux += c;
-            }
-            else if(c == '\n' && inFirstLine)
-            {
-                inFirstLine = false;
-                labels.Add(aux);
-                values.Add(new List<string>());
-                aux = "";
-            }
-            else if(c == '\n' && !inFirstLine)
-            {
-                if(aux != "")
-                {
-                    values[inserIndex].Add(aux);
-                    inserIndex = 0;
-                    aux = "";
-                }
-            }
-            else if(c == ':')
-            {
-                if (inFirstLine)
-                {
-                    if(aux != "")
-                    {   
-                        labels.Add(aux);
-                        values.Add(new List<string>());
-                    }
-                }
-                else
-                {
-                    if(aux != "")
-                    {
-                        values[inserIndex].Add(aux);
-                        inserIndex++;
-                    }
-                }
-
-                aux = "";
-            }
-        }
-
-        foreach(string label in labels) //Peor de los casos - Luego limpiar el arbol si eso 
-        {
-            decisionTree.Add(new List<string[]>());
-        }
-    }
-
     private void n_ProcessSourceText(string text)
     {
         string aux = "";
         bool inFirstLine = true;
         int inserIndex = 0;
+
+        string line_value = "2";
 
         foreach (char c in text)
         {
@@ -433,6 +268,10 @@ public class DecisionTree : MonoBehaviour {
                 if (aux != "")
                 {
                     values[inserIndex].Add(aux);
+
+                    values[inserIndex].Add(line_value);
+                    line_value = (Int32.Parse(line_value) + 1).ToString();
+
                     values.Add(new List<string>()); 
                     inserIndex++;
                     aux = "";
@@ -470,7 +309,6 @@ public class DecisionTree : MonoBehaviour {
             decisionTree.Add(new List<string[]>());
         }
     }
-
     private float Entropy(float one,float other)
     {
         if (one == 0 || other == 0) return 0;
@@ -483,61 +321,26 @@ public class DecisionTree : MonoBehaviour {
 
         return -(one / total * log1) - (other / total * log2);
     }
-    private float Entropy(List<int> values)
-    {
-        float total = 0;
-        List<float> n_values = new List<float>();
-
-
-        foreach (float number in values)
-        {
-            total += number;
-        }
-        
-        for(int i=0;i<values.Count;i++)
-        {
-            n_values.Add(values[i] / total); //HAS to be exactly 1.0?
-        }
-
-
-        return Entropy(n_values);
-    }
-    private float Entropy(List<float> values)
-    {
-        float sum = 0;
-
-        foreach(float number in values)
-        {
-            sum += -(number * Mathf.Log(number, 2));
-        }
-
-        return sum;
-    }
-    private float Entropy(List<KeyValuePair<string, float[]>> values)
+    
+    private float Entropy(List<KeyValuePair<string, float[]>> l_values)
     {
         float sum = 0;
         float total = 0;
 
-        foreach (KeyValuePair<string, float[]> pair in values)
+        foreach (KeyValuePair<string, float[]> pair in l_values)
         {
             total += pair.Value[0];
             total += pair.Value[1];
         }
 
-        foreach (KeyValuePair<string, float[]> pair in values)
+        foreach (KeyValuePair<string, float[]> pair in l_values)
         {
             float ent = Entropy(pair.Value[0], pair.Value[1]);
-            sum = (pair.Value[0] / total) * ent;
+            sum += (pair.Value[0] / total) * ent;
         }
 
         return sum;
     }
-    private float InformationGain()
-    {
-        return 1.0f;
-    }
-
-
     public List<string> DeepCopy(List<string> toCopy)
     {
         MemoryStream ms = new MemoryStream();
